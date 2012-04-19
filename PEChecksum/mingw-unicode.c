@@ -1,3 +1,6 @@
+// This document is released into the public domain. Absolutely no warranty is provided.
+// See http://www.coderforlife.com/projects/utilities.
+//
 // This is for the MinGW compiler which does not support wmain.
 // It is a wrapper for _tmain when _UNICODE is defined (wmain).
 //

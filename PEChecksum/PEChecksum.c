@@ -1,11 +1,6 @@
-#ifndef _WIN32_WINNT            // Specifies that the minimum required platform is Windows Vista.
-#define _WIN32_WINNT 0x0501     // Change this to the appropriate value to target other versions of Windows.
-#endif
-
 #define WIN32_LEAN_AND_MEAN
 #define _CRT_SECURE_NO_WARNINGS
-#include <windows.h>
-
+#include <windows.h> // only things used are simple IO (could be replaced with stdio) and some file structures
 #include <tchar.h>
 #include <stdio.h>
 
