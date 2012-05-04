@@ -4,7 +4,7 @@
 :: Make sure both mingw-w32\bin and mingw-w64\bin are in the PATH
 
 set FLAGS=-mconsole -static-libgcc -O3 -s -D UNICODE -D _UNICODE
-set FILES=xdel.c util.c vector.c set.c pair.c map.c
+set FILES=xdel.c util.c argparser.c vector.c set.c pair.c map.c
 
 echo Compiling 32-bit...
 i686-w64-mingw32-gcc %FLAGS% -o xdel.exe %FILES%

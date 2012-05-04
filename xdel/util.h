@@ -1,6 +1,7 @@
 #ifndef _UTIL_H_
 #define _UTIL_H_
 
+#define _CRT_SECURE_NO_WARNINGS
 #include <tchar.h>
 
 // Copies the part of a that is not in b

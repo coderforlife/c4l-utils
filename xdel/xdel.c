@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <tchar.h>
 
+#include "argsparser.h"
 #include "util.h"
 #include "vector.h"
 #include "set.h"
@@ -97,10 +98,25 @@ static PSID GetCurrentSID() {
 	return sid;
 }
 
+// Gets the information for a file or directory, mainly used for the volume serial number
+// This opens the reparse point instead of the pointed-to file
+static BOOL GetFileInformation(const TCHAR* f, BY_HANDLE_FILE_INFORMATION *info)
+{
+	BOOL retval = FALSE;
+	HANDLE hFile = CreateFile(f, FILE_READ_ATTRIBUTES, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, NULL);
+	if (hFile != INVALID_HANDLE_VALUE)
+	{
+		retval = GetFileInformationByHandle(hFile, info);
+		CloseHandle(hFile);
+	}
+	return retval;
+}
+
 // 'Corrects' the security on a file by taking ownership of it and giving the current user full control
 // For directories these will do a complete recursive correction.
-static void CorrectSecurity(TCHAR *f, DWORD attrib, BOOL takeownership, PSID sid, PACL acl) {
-	if (attrib != INVALID_FILE_ATTRIBUTES) {
+static void CorrectSecurity(TCHAR *f, DWORD attrib, BOOL takeownership, PSID sid, PACL acl, BOOL oneVolumeOnly, DWORD volumeSN) {
+	BY_HANDLE_FILE_INFORMATION info;
+	if (attrib != INVALID_FILE_ATTRIBUTES && (!oneVolumeOnly || !GetFileInformation(f, &info) || info.dwVolumeSerialNumber == volumeSN)) {
 		DWORD err;
 		if (sid && takeownership) {
 			err = SetNamedSecurityInfo(f, SE_FILE_OBJECT, OWNER_SECURITY_INFORMATION, sid, NULL, NULL, NULL);
@@ -128,10 +144,10 @@ static void CorrectSecurity(TCHAR *f, DWORD attrib, BOOL takeownership, PSID sid
 				if (dwError != ERROR_FILE_NOT_FOUND && dwError != ERROR_ACCESS_DENIED)
 					LogFileError(TEXT("FindFirstFileEx failed for"), file, dwError);
 			} else {
- 				do {
+				do {
 					if (_tcscmp(ffd.cFileName, TEXT("..")) == 0 || _tcscmp(ffd.cFileName, TEXT(".")) == 0)
 						continue;
-					CorrectSecurity(makeFullPath(f, ffd.cFileName, full), ffd.dwFileAttributes, takeownership, sid, acl);
+					CorrectSecurity(makeFullPath(f, ffd.cFileName, full), ffd.dwFileAttributes, takeownership, sid, acl, oneVolumeOnly, volumeSN);
 				} while (FindNextFile(hFind, &ffd) != 0);
 				dwError = GetLastError();
 				if (dwError != ERROR_NO_MORE_FILES)
@@ -149,8 +165,9 @@ static void CorrectSecurity(TCHAR *f, DWORD attrib, BOOL takeownership, PSID sid
 // Finds files recursively
 // Committed is if the current recursive path only contains files to be deleted (and thus simply list all files found)
 // Otherwise wildcards are examined and directories are recursed
-static void FindFiles(TCHAR *path, BOOL committed) {
+static void FindFiles(TCHAR *path, BOOL committed, BOOL oneVolumeOnly, DWORD volumeSN) {
 	WIN32_FIND_DATA ffd;
+	BY_HANDLE_FILE_INFORMATION info;
 	TCHAR full[BIG_PATH+5];
 	HANDLE hFind;
 	DWORD dwError, attrib;
@@ -184,19 +201,24 @@ static void FindFiles(TCHAR *path, BOOL committed) {
 		if (dwError != ERROR_FILE_NOT_FOUND && dwError != ERROR_ACCESS_DENIED)
 			LogFileError(TEXT("FindFirstFileEx failed for"), file, dwError);
 	} else {
- 		do {
+		do {
 			if (_tcscmp(ffd.cFileName, TEXT("..")) == 0 || _tcscmp(ffd.cFileName, TEXT(".")) == 0)
 				continue;
 			makeFullPath(base, ffd.cFileName, full);
+			
+			if (oneVolumeOnly && GetFileInformation(full, &info) && info.dwVolumeSerialNumber != volumeSN) {
+				//_tprintf(TEXT("* Skipping '%s': not same volume\n"), full);
+				continue;
+			}
 			/*if (ffd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) {
 				_tprintf(TEXT("! Found reparse point '%s': Cannot remove\n"), full);
 				continue;
 			}*/
 			vector_append(files, copyStr(full));
-			if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+			if ((ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
 				if (!committed)
 					set_insert(matches, copyStr(ffd.cFileName));
-				FindFiles(full, TRUE);
+				FindFiles(full, TRUE, oneVolumeOnly, volumeSN);
 			}
 		} while (FindNextFile(hFind, &ffd) != 0);
 		dwError = GetLastError();
@@ -226,11 +248,13 @@ static void FindFiles(TCHAR *path, BOOL committed) {
 				if (_tcscmp(ffd.cFileName, TEXT("..")) != 0 && _tcscmp(ffd.cFileName, TEXT(".")) != 0 && ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
 					if (!set_contains(matches, ffd.cFileName)) { // don't re-recurse into a directory
 						makeFullPath2(base, ffd.cFileName, pattern, full);
-						/*if (ffd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) {
-							_tprintf(TEXT("! Found reparse point '%s': Cannot remove\n"), full);
-						} else {*/
-							FindFiles(full, FALSE);
-						//}
+						if (oneVolumeOnly && GetFileInformation(full, &info) && info.dwVolumeSerialNumber != volumeSN) {
+							//_tprintf(TEXT("* Skipping '%s': not same volume\n"), full);
+						//} else if (ffd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) {
+						//	_tprintf(TEXT("! Found reparse point '%s': Cannot remove\n"), full);
+						} else {
+							FindFiles(full, FALSE, oneVolumeOnly, volumeSN);
+						}
 					}
 				}
 			} while (FindNextFile(hFind, &ffd) != 0);
@@ -270,15 +294,17 @@ int _tmain(int argc, _TCHAR* argv[]) {
 	ULONGLONG size = 0;
 	DWORD err;
 	TCHAR *f;
-	WIN32_FILE_ATTRIBUTE_DATA attrib;
 	TCHAR sSize[64];
+	
+	parsed_args* args = parse_args(argc, argv);
+	BOOL oneVolumeOnly = has_arg(args, TEXT("one-volume-only"), TEXT('\0'));
 
 	PSID sid = NULL;
 	PACL acl = NULL;
 	BOOL takeownership;
 	EXPLICIT_ACCESS ea[1];
 
-	if (argc < 2) {
+	if (!args->file_count) {
 		_tprintf(TEXT("You need to provide at least one file, directory, or wildcard pattern to delete\n"));
 		return 1;
 	}
@@ -312,16 +338,39 @@ int _tmain(int argc, _TCHAR* argv[]) {
 	files = vector_create(64);
 
 	// Find all files to delete
-	for (i = 1; i < argc; i++) {
-		DWORD attrib = GetFileAttributes(argv[i]);
-		if (attrib != INVALID_FILE_ATTRIBUTES && (attrib & FILE_ATTRIBUTE_DIRECTORY) != 0) {
+	for (i = 0; i < args->file_count; i++) {
+		DWORD attrib;
+		DWORD volumeSN = 0;
+		if (oneVolumeOnly)
+		{
+			BY_HANDLE_FILE_INFORMATION info;
+			if (GetFileInformation(args->files[i], &info))
+			{
+				attrib = info.dwFileAttributes;
+			}
+			else
+			{
+				// Calculate volumeSN for a wildcard arg
+				TCHAR path[BIG_PATH+5], *end;
+				_tcscpy(path, args->files[i]);
+				while ((end = _tcsrchr(path, '\\')) != NULL) { *end = 0; if (GetFileInformation(path, &info)) break; }
+				if (end == NULL && (path[0] == 0 || !GetFileInformation(path, &info)) && !GetFileInformation(TEXT("."), &info)) { LogLastError(TEXT("GetFileInformation")); return -1; }
+				attrib = INVALID_FILE_ATTRIBUTES;
+			}
+			volumeSN = info.dwVolumeSerialNumber;
+		}
+		else
+		{
+			attrib = GetFileAttributes(args->files[i]);
+		}
+		if (attrib != INVALID_FILE_ATTRIBUTES && (attrib & FILE_ATTRIBUTE_DIRECTORY)) {
 			/*if (attrib & FILE_ATTRIBUTE_REPARSE_POINT) {
-				_tprintf(TEXT("! Found reparse point '%s': Cannot remove\n"), argv[i]);
+				_tprintf(TEXT("! Found reparse point '%s': Cannot remove\n"), args->files[i]);
 				continue;
 			}*/
-			vector_append(files, copyStr(argv[i]));
+			vector_append(files, copyStr(args->files[i]));
 		}
-		FindFiles(argv[i], FALSE);
+		FindFiles(args->files[i], FALSE, oneVolumeOnly, volumeSN);
 	}
 
 	// Leave now if there is nothing to delete
@@ -333,11 +382,16 @@ int _tmain(int argc, _TCHAR* argv[]) {
 
 	// Correct security and delete files / directories
 	for (i = files->length-1; i >= 0; i--) {
-		f = files->x[i];
+		WIN32_FILE_ATTRIBUTE_DATA attrib;
+		BY_HANDLE_FILE_INFORMATION info;
+		DWORD volumeSN = 0;
+		f = (TCHAR*)files->x[i];
 		if (!GetFileAttributesEx(f, GetFileExInfoStandard, &attrib))
 			continue;
-		CorrectSecurity(f, attrib.dwFileAttributes, takeownership, sid, acl);
-		if ((attrib.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0) {
+		if (oneVolumeOnly && GetFileInformation(f, &info))
+			volumeSN = info.dwVolumeSerialNumber;
+		CorrectSecurity(f, attrib.dwFileAttributes, takeownership, sid, acl, oneVolumeOnly, volumeSN);
+		if (attrib.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
 			if (!RemoveDirectory(f) && (err = DeleteWithSH(f)) != 0) {
 				LogFileError(TEXT("Failed to delete folder"), f, err);
 				failures++;
@@ -366,6 +420,7 @@ int _tmain(int argc, _TCHAR* argv[]) {
 	vector_destroy(files, TRUE);
 	LocalFree(acl);
 	LocalFree(sid);
+	free_parsed_args(args);
 
 	return 0;
 }
