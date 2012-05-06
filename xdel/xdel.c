@@ -142,7 +142,7 @@ static void CorrectSecurity(TCHAR *f, DWORD attrib, BOOL takeownership, PSID sid
 			if (hFind == INVALID_HANDLE_VALUE) {
 				dwError = GetLastError();
 				if (dwError != ERROR_FILE_NOT_FOUND && dwError != ERROR_ACCESS_DENIED)
-					LogFileError(TEXT("FindFirstFileEx failed for"), file, dwError);
+					LogFileError(TEXT("FindFirstFileEx in CorrectSecurity failed for"), file, dwError);
 			} else {
 				do {
 					if (_tcscmp(ffd.cFileName, TEXT("..")) == 0 || _tcscmp(ffd.cFileName, TEXT(".")) == 0)
@@ -151,7 +151,7 @@ static void CorrectSecurity(TCHAR *f, DWORD attrib, BOOL takeownership, PSID sid
 				} while (FindNextFile(hFind, &ffd) != 0);
 				dwError = GetLastError();
 				if (dwError != ERROR_NO_MORE_FILES)
-					LogError(TEXT("FindNextFile"), dwError);
+					LogError(TEXT("FindNextFile in CorrectSecurity"), dwError);
 				FindClose(hFind);
 			}
 			free(file);
@@ -199,7 +199,7 @@ static void FindFiles(TCHAR *path, BOOL committed, BOOL oneVolumeOnly, DWORD vol
 	if (hFind == INVALID_HANDLE_VALUE) {
 		dwError = GetLastError();
 		if (dwError != ERROR_FILE_NOT_FOUND && dwError != ERROR_ACCESS_DENIED)
-			LogFileError(TEXT("FindFirstFileEx failed for"), file, dwError);
+			LogFileError(TEXT("FindFirstFileEx in FindFiles failed for"), file, dwError);
 	} else {
 		do {
 			if (_tcscmp(ffd.cFileName, TEXT("..")) == 0 || _tcscmp(ffd.cFileName, TEXT(".")) == 0)
@@ -223,7 +223,7 @@ static void FindFiles(TCHAR *path, BOOL committed, BOOL oneVolumeOnly, DWORD vol
 		} while (FindNextFile(hFind, &ffd) != 0);
 		dwError = GetLastError();
 		if (dwError != ERROR_NO_MORE_FILES)
-			LogError(TEXT("FindNextFile"), dwError);
+			LogError(TEXT("FindNextFile in FindFiles"), dwError);
 		FindClose(hFind);
 	}
 
@@ -242,7 +242,7 @@ static void FindFiles(TCHAR *path, BOOL committed, BOOL oneVolumeOnly, DWORD vol
 		if (hFind == INVALID_HANDLE_VALUE) {
 			dwError = GetLastError();
 			if (dwError != ERROR_FILE_NOT_FOUND && dwError != ERROR_ACCESS_DENIED)
-				LogFileError(TEXT("FindFirstFileEx(!committed) failed for"), baseSrch, dwError);
+				LogFileError(TEXT("FindFirstFileEx in FindFiles2 failed for"), baseSrch, dwError);
 		} else {
 			do {
 				if (_tcscmp(ffd.cFileName, TEXT("..")) != 0 && _tcscmp(ffd.cFileName, TEXT(".")) != 0 && ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
@@ -260,7 +260,7 @@ static void FindFiles(TCHAR *path, BOOL committed, BOOL oneVolumeOnly, DWORD vol
 			} while (FindNextFile(hFind, &ffd) != 0);
 			dwError = GetLastError();
 			if (dwError != ERROR_NO_MORE_FILES)
-				LogError(TEXT("FindNextFile(!committed)"), dwError);
+				LogError(TEXT("FindNextFile in FindFiles2"), dwError);
 			FindClose(hFind);
 		}
 		free(baseSrch);
@@ -305,7 +305,10 @@ int _tmain(int argc, _TCHAR* argv[]) {
 	EXPLICIT_ACCESS ea[1];
 
 	if (!args->file_count) {
-		_tprintf(TEXT("You need to provide at least one file, directory, or wildcard pattern to delete\n"));
+		_ftprintf(stderr, TEXT("Usage: %s [options] file1 [file2 ...]\n\n"), args->program);
+		_ftprintf(stderr, TEXT("  The files can be directories, files, or simple wildcards\n\n"));
+		_ftprintf(stderr, TEXT("  Options:\n"));
+		_ftprintf(stderr, TEXT("    --one-volume-only  do not delete files on other volumes when\n                       junctions/symbolic links/mount points are found"));
 		return 1;
 	}
 
