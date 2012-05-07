@@ -42,11 +42,20 @@ void printAttr(DWORD attr) {
 	}
 }
 
-void dumpWSI(WIN32_STREAM_ID *wsi) {
+/*void dumpWSI(WIN32_STREAM_ID *wsi) {
 	_tprintf(TEXT("ID:        %s (%X)\n"), ((wsi->dwStreamId<MIN_STREAM_ID||wsi->dwStreamId>MAX_STREAM_ID) ? TEXT("Unknown") : streamIds[wsi->dwStreamId]), wsi->dwStreamId);
 	_tprintf(TEXT("Attrs:     ")); printAttr(wsi->dwStreamAttributes); _tprintf(TEXT("\n")); 
 	_tprintf(TEXT("Size:     %8I64d\n"), wsi->Size.QuadPart);
 	_tprintf(TEXT("Name Size:%8u\n"), wsi->dwStreamNameSize);
-	_tprintf(TEXT("Name:      %s\n"), (wsi->dwStreamNameSize > 0) ? wsi->cStreamName : TEXT("[NULL]"));
+	wprintf(L"Name:      %s\n", (wsi->dwStreamNameSize > 0) ? wsi->cStreamName : L"[NULL]");
+	_tprintf(TEXT("--------------------\n"));		
+}*/
+
+void dumpWSI(WIN32_STREAM_ID wsi, WCHAR *name) {
+	_tprintf(TEXT("ID:        %s (%X)\n"), ((wsi.dwStreamId<MIN_STREAM_ID||wsi.dwStreamId>MAX_STREAM_ID) ? TEXT("Unknown") : streamIds[wsi.dwStreamId]), wsi.dwStreamId);
+	_tprintf(TEXT("Attrs:     ")); printAttr(wsi.dwStreamAttributes); _tprintf(TEXT("\n")); 
+	_tprintf(TEXT("Size:     %8I64d\n"), wsi.Size.QuadPart);
+	_tprintf(TEXT("Name Size:%8u\n"), wsi.dwStreamNameSize);
+	wprintf(L"Name:      %s\n", (wsi.dwStreamNameSize > 0) ? name : L"[NULL]");
 	_tprintf(TEXT("--------------------\n"));		
 }
