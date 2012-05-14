@@ -217,13 +217,8 @@ static void FindFiles(TCHAR *path, BOOL committed, BOOL oneVolumeOnly) {
 			if (_tcscmp(ffd.cFileName, TEXT("..")) == 0 || _tcscmp(ffd.cFileName, TEXT(".")) == 0)
 				continue;
 			makeFullPath(base, ffd.cFileName, full);
-			
-			/*if (ffd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) {
-				_tprintf(TEXT("! Found reparse point '%s': Cannot remove\n"), full);
-				continue;
-			}*/
 			vector_append(files, copyStr(full));
-			if ((ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) && !(oneVolumeOnly && FileChangesVolume(full))) {
+			if ((ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) && !(oneVolumeOnly && (ffd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) && FileChangesVolume(full))) {
 				if (!committed)
 					set_insert(matches, copyStr(ffd.cFileName));
 				FindFiles(full, TRUE, oneVolumeOnly);
@@ -256,10 +251,7 @@ static void FindFiles(TCHAR *path, BOOL committed, BOOL oneVolumeOnly) {
 				if (_tcscmp(ffd.cFileName, TEXT("..")) != 0 && _tcscmp(ffd.cFileName, TEXT(".")) != 0 && ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
 					if (!set_contains(matches, ffd.cFileName)) { // don't re-recurse into a directory
 						makeFullPath2(base, ffd.cFileName, pattern, full);
-						//if (ffd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) {
-						//	_tprintf(TEXT("! Found reparse point '%s': Cannot remove\n"), full);
-						//} else
-						if (!(oneVolumeOnly && FileChangesVolume(full))) {
+						if (!(oneVolumeOnly && (ffd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) && FileChangesVolume(full))) {
 							FindFiles(full, FALSE, oneVolumeOnly);
 						}
 					}
@@ -351,11 +343,10 @@ int _tmain(int argc, _TCHAR* argv[]) {
 	for (i = 0; i < args->file_count; i++) {
 		DWORD attrib = GetFileAttributes(args->files[i]);
 		if (attrib != INVALID_FILE_ATTRIBUTES && (attrib & FILE_ATTRIBUTE_DIRECTORY)) {
-			/*if (attrib & FILE_ATTRIBUTE_REPARSE_POINT) {
-				_tprintf(TEXT("! Found reparse point '%s': Cannot remove\n"), args->files[i]);
-				continue;
-			}*/
 			vector_append(files, copyStr(args->files[i]));
+			if (oneVolumeOnly && (attrib & FILE_ATTRIBUTE_REPARSE_POINT) && FileChangesVolume(args->files[i])) {
+				continue;
+			}
 		}
 		FindFiles(args->files[i], FALSE, oneVolumeOnly);
 	}
