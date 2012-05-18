@@ -210,7 +210,6 @@ static PSID GetCurrentSID() {
 	return sid;
 }
 
-#include "mingw-unicode.c"
 int _tmain(int argc, _TCHAR* argv[]) {
 	BOOL take_ownership;
 	PSID sid = NULL;

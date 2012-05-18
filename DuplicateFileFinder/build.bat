@@ -3,7 +3,7 @@
 :: This builds using MinGW-w64 for 32 and 64 bit (http://mingw-w64.sourceforge.net/)
 :: Make sure both mingw-w32\bin and mingw-w64\bin are in the PATH
 
-set FLAGS=-mconsole -static-libgcc -O3 -s -D UNICODE -D _UNICODE
+set FLAGS=-mconsole -municode -static-libgcc -O3 -s -D UNICODE -D _UNICODE
 set FILES=DuplicateFileFinder.c md5.c vector.c pair.c map.c 
 
 echo Compiling 32-bit...

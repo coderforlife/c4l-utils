@@ -85,7 +85,6 @@ static BOOL CheckAttributes(TCHAR *src, TCHAR **pdest, BOOL *readonly) {
 	return TRUE;
 }
 
-#include "mingw-unicode.c"
 int _tmain(int argc, _TCHAR* argv[]) {
 	TCHAR *src, *dest;
 	BOOL backup, readonly, writeFailed = FALSE;

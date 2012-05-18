@@ -109,7 +109,6 @@ BOOL GetParams(Params *p, int argc, TCHAR* argv[]) {
 	return hive && cert;
 }
 
-#include "mingw-unicode.c"
 int _tmain(int argc, _TCHAR* argv[]) {
 	LONG retval;
 	Params p;

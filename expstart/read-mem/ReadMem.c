@@ -27,7 +27,6 @@ LPVOID getData(HANDLE proc, BYTE *base, SIZE_T offset, DWORD *length) {
 	return data;
 }
 
-#include "mingw-unicode.c"
 int _tmain(int argc, _TCHAR* argv[]) {
 	BYTE *base;
 	DWORD pid, rsrcVA, bitmapOffset, i = 0;

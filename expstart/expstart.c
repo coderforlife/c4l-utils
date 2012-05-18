@@ -36,7 +36,6 @@ void resume(PROCESS_INFORMATION pi) {
 	CloseHandle(pi.hProcess);
 }
 
-#include "mingw-unicode-gui.c"
 int WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLine, int nCmdShow) {
 	TCHAR WinDir[MAX_PATH];
 	BYTE *base;

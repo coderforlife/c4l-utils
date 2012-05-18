@@ -36,7 +36,6 @@ inline static int decimalWidth(unsigned long x) {
 	return width;
 }
 
-#include "mingw-unicode.c"
 // Compares two files byte wise
 // Returns one of the RETURN_* constants or, if a difference is found, a positive value indicating the one more than byte position of the difference found.
 int _tmain(int argc, _TCHAR* argv[]) {

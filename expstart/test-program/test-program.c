@@ -5,7 +5,6 @@
 #include <tchar.h>
 #include <windows.h>
 
-#include "mingw-unicode.c"
 int _tmain(int argc, _TCHAR* argv[])
 {
 	MessageBox(NULL, TEXT("Hello World!"), TEXT("Hello World"), MB_OK);

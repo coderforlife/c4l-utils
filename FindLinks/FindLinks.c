@@ -34,7 +34,6 @@ static unsigned __int64 toUI64(DWORD high, DWORD low) {
 	return x.QuadPart;
 }
 
-#include "mingw-unicode.c"
 int _tmain(int argc, _TCHAR* argv[]) {
 	HANDLE h;
 	BY_HANDLE_FILE_INFORMATION info;

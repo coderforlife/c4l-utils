@@ -160,8 +160,7 @@ static int unblock_dir(WCHAR *dir) {
 	return UNBLOCK_SUCCESS;
 }
 
-#include "mingw-unicode.c"
-int _tmain(int argc, wchar_t* argv[]) {
+int wmain(int argc, wchar_t* argv[]) {
 	int i;
 	DWORD retval;
 

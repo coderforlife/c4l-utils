@@ -127,7 +127,6 @@ DWORD GetCurPEChkSum(LPCTSTR filename, OUT DWORD *peOffset, OUT BOOL *err) {
 }
 
 /** Main function **/
-#include "mingw-unicode.c"
 int _tmain(int argc, _TCHAR *argv[]) {
 	int i;
 	TCHAR *filename;

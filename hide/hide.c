@@ -5,7 +5,6 @@
 #include <windows.h>
 #include <tchar.h>
 
-#include "mingw-unicode-gui.c"
 int WINAPI _tWinMain(HINSTANCE a, HINSTANCE b, LPTSTR lpCmdLine, int d) {
 	UNREFERENCED_PARAMETER(a);
 	UNREFERENCED_PARAMETER(b);

@@ -286,7 +286,6 @@ static int DeleteWithSH(const TCHAR *f) {
 }
 
 
-#include "mingw-unicode.c"
 int _tmain(int argc, _TCHAR* argv[]) {
 	int i;
 	DWORD failures = 0;

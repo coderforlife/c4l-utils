@@ -310,7 +310,6 @@ int findIdenticalFiles(LONGLONG *size, vector *v, struct params *x) {
 	return 0;
 }
 
-#include "mingw-unicode.c"
 int _tmain(int argc, _TCHAR* argv[]) {
 	unsigned int i, nFiles = 0;
 	LONGLONG size = 0;

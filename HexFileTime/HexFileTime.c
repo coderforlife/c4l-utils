@@ -80,7 +80,6 @@ static FILETIME *getTime(TCHAR *s, FILETIME *ft) {
 	return (ft->dwHighDateTime > 0x80000000u) ? NULL : ft;
 }
 
-#include "mingw-unicode.c"
 int _tmain(int argc, TCHAR *argv[]) {
 	FILETIME preserve = {0xFFFFFFFF, 0xFFFFFFFF}; // tells SetFileTime to not update last accessed time on file open
 	HANDLE h;

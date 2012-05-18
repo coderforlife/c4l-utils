@@ -107,7 +107,6 @@ static BOOL checkCmd(LPCTSTR cmd, LPCTSTR arg) {
 	return (arg[0] == TEXT('/') || arg[0] == TEXT('-')) && (_tcsicmp(cmd, arg+1) == 0);
 }
 
-#include "mingw-unicode.c"
 int _tmain(int argc, _TCHAR* argv[]) {
 	DWORD retval = -2;
 
