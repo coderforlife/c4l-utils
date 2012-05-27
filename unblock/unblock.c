@@ -1,3 +1,19 @@
+// unblock: removes the unsafe security block from a file
+// Copyright (C) 2010-2012  Jeffrey Bush <jeff@coderforlife.com>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/gpl.html>.
+
 #ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0501
 #endif
@@ -163,6 +179,14 @@ static int unblock_dir(WCHAR *dir) {
 int wmain(int argc, wchar_t* argv[]) {
 	int i;
 	DWORD retval;
+
+	wprintf("unblock Copyright (C) 2010-2012  Jeffrey Bush <jeff@coderforlife.com>\n");
+	wprintf("This program comes with ABSOLUTELY NO WARRANTY;\n");
+	wprintf("This is free software, and you are welcome to redistribute it\n");
+	wprintf("under certain conditions;\n");
+	wprintf("See http://www.gnu.org/licenses/gpl.html for more details.\n");
+	wprintf("\n");
+
 
 	if (argc < 2) {
 		wprintf(L"Usage: %s file1 [file2 ...]\n", argv[0]);
